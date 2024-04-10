@@ -1,4 +1,4 @@
-import React, { Component, useState } from 'react';
+import React, { Component } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css'; // Importa los estilos de react-datepicker
 import axios from 'axios';
@@ -39,7 +39,6 @@ class App extends Component {
       celularError: '',
       telefonoError: '',
       correoError: '',
-      fechaNacimientoError: '',
       nombrePadreError: '',
       nombreMadreError: '',
       encargadoError: ''
@@ -61,24 +60,64 @@ class App extends Component {
       })
   }
 
+
+  //funciona
   peticionPost = async () => {
-    const { form } = this.state;
+    const { form, errors } = this.state;
+  
+    // Verificar si algún campo está vacío
+    if (
+      !form.nombres ||
+      !form.apellidos ||
+      !form.celular ||
+      !form.correo ||
+      !form.telefono ||
+      !form.genero ||
+      !form.direccion ||
+      !form.fechaNacimiento ||
+      !form.fechaIngreso ||
+      !form.encargado
+    ) {
+      // Mostrar un mensaje de error y detener la ejecución
+      alert('Por favor completa todos los campos.');
+      return;
+    }
+  
+    // Realizar la petición POST
     delete form.estudianteId;
     await axios.post(`${url}/agregar1`, form)
       .then(response => {
         this.modalInsertar();
         this.peticionGet();
-
         window.alert('Estudiante agregado correctamente.');
       })
       .catch(error => {
         console.log(error.message);
       });
   };
-
+  
   peticionPut = () => {
-    const { form } = this.state;
-
+    const { form, errors } = this.state;
+  
+    // Verificar si algún campo está vacío
+    if (
+      !form.nombres ||
+      !form.apellidos ||
+      !form.celular ||
+      !form.correo ||
+      !form.telefono ||
+      !form.genero ||
+      !form.direccion ||
+      !form.fechaNacimiento ||
+      !form.fechaIngreso ||
+      !form.encargado
+    ) {
+      // Mostrar un mensaje de error y detener la ejecución
+      alert('Por favor completa todos los campos.');
+      return;
+    }
+  
+    // Realizar la petición PUT
     axios.put(`${url}/${form.estudianteId}`, form)
       .then(() => {
         this.modalInsertar();
@@ -127,6 +166,7 @@ class App extends Component {
         }
       });
     }
+    
     // Convertir a mayúsculas en tiempo real
     //Esta funcion es la que nos da problema -> se necesita arreglar
    /*const inputs = document.querySelectorAll
@@ -137,8 +177,6 @@ class App extends Component {
     input.value = input.value.toUpperCase();
   });
 }*/
-
-
 
     // Validación para el campo celular y telefono: exactamente 8 dígitos numéricos
     if (name === 'celular' || name === 'telefono') {
@@ -180,32 +218,7 @@ class App extends Component {
       }
     }
 
-     // Validación para campo de fecha de nacimiento
-     if (name === 'fechaNacimiento') {
-      const currentDate = new Date();
-      const selectedDate = new Date(value);
-      const minDate = new Date();
-      minDate.setFullYear(currentDate.getFullYear() - 18); // 18 años atrás
-      const maxDate = new Date();
-      maxDate.setFullYear(currentDate.getFullYear() - 8); // 8 años atrás
-
-      if (selectedDate < minDate || selectedDate > maxDate) {
-        this.setState({
-          errors: {
-            ...errors,
-            fechaNacimientoError: 'La fecha de nacimiento debe estar entre 8 y 18 años atrás.'
-          }
-        });
-      } else {
-        this.setState({
-          errors: {
-            ...errors,
-            fechaNacimientoError: ''
-          }
-        });
-      }
-    }
-
+    
 
     // Actualizar el estado con el nuevo valor del campo
     this.setState({
@@ -371,10 +384,6 @@ class App extends Component {
            <h1>Formulario de inscripcion alumno</h1>
 
            <div className="form-group">
-            <div>
-              <img src="./imagenes/f74477cd-0ef0-4da3-8e49-a7beef08cce7.jpg" alt="imagen"
-              className="img-fluid mb-2" style={{width:"50px", height:"50px"}}/>
-            </div>
            </div>
             
             <div className="form-row"> 
@@ -503,9 +512,7 @@ class App extends Component {
                 onChange={this.handleDateChange}
                 dateFormat="dd/MM/yyyy"
               />
-              {errors.fechaNacimientoError && (
-            <div className="text-danger">{errors.fechaNacimientoError}</div>
-          )}
+             
               </div>
               
               <div className="form-group col-md-6">
@@ -573,7 +580,7 @@ class App extends Component {
           <ModalFooter>
             {this.state.tipoModal === 'insertar' ? (
               <button className="btn btn-success" onClick={() => this.peticionPost()}>
-                Insertar
+                Verificar
               </button>
             ) : (
               <button className="btn btn-primary" onClick={() => this.peticionPut()}>
