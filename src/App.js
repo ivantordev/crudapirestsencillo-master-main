@@ -43,7 +43,16 @@ class App extends Component {
       nombreMadreError: '',
       encargadoError: ''
     },
-    showSearchForm: false  // Estado para controlar la visibilidad del formulario de búsqueda
+    showTable: false,
+    showSearchForm: false, // Estado para controlar la visibilidad del formulario de búsqueda
+    showAddButton: false,
+    activeView: 'estudiantes',
+    modalOpen: false, // Estado para controlar si se está realizando la acción de agregar
+    typeToAdd: null,
+    showStudentView: false,
+    showAddOptions: false,
+    searchText: '', // Texto de búsqueda
+    searchResults: [] // Resultados de búsqueda
   }
 
   componentDidMount() {
@@ -63,7 +72,7 @@ class App extends Component {
 
   //funciona
   peticionPost = async () => {
-    const { form, errors } = this.state;
+    const { form } = this.state;
   
     // Verificar si algún campo está vacío
     if (
@@ -97,7 +106,7 @@ class App extends Component {
   };
   
   peticionPut = () => {
-    const { form, errors } = this.state;
+    const { form} = this.state;
   
     // Verificar si algún campo está vacío
     if (
@@ -128,113 +137,118 @@ class App extends Component {
       });
   };
 
+  //filtrar busqueda
+  handleSearchTextChange = (e) => {
+    const searchText = e.target.value.toUpperCase(); // Obtener texto de búsqueda en minúsculas
+    const filteredResults = this.state.data.filter(item =>
+      item.estudianteId.toString().includes(searchText) || item.apellidos.toLowerCase().includes(searchText)
+    );
+    this.setState({ searchText, searchResults: filteredResults });
+  };
+
+  handleToggleTable = () => {
+    this.setState({ showTable: true, showAddButton: true, showSearchButton: true, showSearchForm:true});
+  };
+    
     handleChange = (e) => {
     const { name, value } = e.target;
     const { form, errors } = this.state;
 
-    const upperCaseValue = value.toUpperCase();
-
-
-   //|| name === 'nombrePadre' || name === 'nombreMadre', por si se necesita que sea obligatorio
-    if (name === 'nombres' || name === 'apellidos' || name === 'encargado') {
-      const onlyLetters = /^[A-Za-z\s]+$/; // Expresión regular para letras y espacios
-      if (!onlyLetters.test(upperCaseValue, value)) {
+   // const upperCase= value.toUpperCase();
+   
+     // Realizar validaciones según el nombre del campo
+  switch (name) {
+    case 'nombres':
+    case 'apellidos':
+    case 'nombrePadre':
+    case 'nombreMadre':
+    case 'encargado':
+      // Validar que solo contenga letras y espacios
+      const onlyLettersRegex = /^[A-Za-z\s]+$/;
+      if (!onlyLettersRegex.test(value)) {
         this.setState({
           errors: {
             ...errors,
-            [`${name}Error`]: `El ${name === 'nombres' ? 'nombre' : (name === 'apellidos' ? 'apellido' : 'Nombre')} solo debe contener letras y espacios.`
-          }
+            [`${name}Error`]: `El campo ${name} solo debe contener letras y espacios.`,
+          },
         });
       } else {
         this.setState({
-          form: {  
-          ...form,
-          [name]:upperCaseValue,
+          form: {
+            ...form,
+            [name]: value.toUpperCase(), // Convertir a mayúsculas
           },
           errors: {
             ...errors,
-            [`${name}Error`]: ''
-          }
+            [`${name}Error`]: '', // Limpiar mensaje de error
+          },
         });
       }
-    }else {
-      // Actualizar el estado normalmente para otros campos
+      break;
+    
+    case 'celular':
+    case 'telefono':
+      // Validar que contenga exactamente 8 dígitos numéricos
+      const digitsRegex = /^[0-9-]+$/;
+      if (!digitsRegex.test(value)) {
+        this.setState({
+          errors: {
+            ...errors,
+            [`${name}Error`]: `El ${name === 'celular' ? 'celular' : 'teléfono'} debe contener exactamente 8 dígitos numéricos.`,
+          },
+        });
+      } else {
+        this.setState({
+          form: {
+            ...form,
+            [name]: value,
+          },
+          errors: {
+            ...errors,
+            [`${name}Error`]: '', // Limpiar mensaje de error
+          },
+        });
+      }
+      break;
+
+    case 'correo':
+      // Validar formato de correo electrónico
+      const emailRegex = /\S+@\S+\.\S+/;
+      if (!emailRegex.test(value)) {
+        this.setState({
+          errors: {
+            ...errors,
+            correoError: 'El correo electrónico debe tener un formato válido.',
+          },
+        });
+      } else {
+        this.setState({
+          form: {
+            ...form,
+            [name]: value,
+          },
+          errors: {
+            ...errors,
+            correoError: '', // Limpiar mensaje de error
+          },
+        });
+      }
+      break;
+
+    // Agregar más casos según los campos que necesiten validación específica
+
+    default:
+      // Para otros campos, simplemente actualizar el estado del formulario
       this.setState({
         form: {
           ...form,
           [name]: value,
-        }
+        },
       });
-    }
+      break;
+  }
+};
     
-    // Convertir a mayúsculas en tiempo real
-    //Esta funcion es la que nos da problema -> se necesita arreglar
-   /*const inputs = document.querySelectorAll
-   ('input[name="nombres"], input[name="apellidos"], input[name="nombrePadre"], input[name="nombreMadre"], input[name="encargado"], input[name="direccion"]');
-
-  for (const input of inputs) {
-  input.addEventListener('input', () => {
-    input.value = input.value.toUpperCase();
-  });
-}*/
-
-    // Validación para el campo celular y telefono: exactamente 8 dígitos numéricos
-    if (name === 'celular' || name === 'telefono') {
-      const validPhonePattern = /^[0-9-]+$/; // Expresión regular para 8 dígitos numéricos
-      if (!validPhonePattern.test(value)) {
-        this.setState({
-          errors: {
-            ...errors,
-            [`${name}Error`]: `El ${name === 'celular' ? 'celular' : 'teléfono'} debe contener exactamente 8 dígitos numéricos.`
-          }
-        });
-      } else {
-        this.setState({
-          errors: {
-            ...errors,
-            [`${name}Error`]: ''
-          }
-        });
-      }
-    }
-
-    // Validación para el campo correo: debe contener '@'
-    if (name === 'correo') {
-      const validEmailPattern = /\S+@\S+\.\S+/; // Expresión regular para validar formato de correo
-      if (!validEmailPattern.test(value)) {
-        this.setState({
-          errors: {
-            ...errors,
-            correoError: 'El correo electrónico debe contener el símbolo "@" y un dominio válido.'
-          }
-        });
-      } else {
-        this.setState({
-          errors: {
-            ...errors,
-            correoError: ''
-          }
-        });
-      }
-    }
-
-    
-
-    // Actualizar el estado con el nuevo valor del campo
-    this.setState({
-      form: {
-        ...form,
-        [name]: value
-      }
-    });
-  };
-
-  handleSearch = () => {
-    // Cambiar el estado para mostrar el formulario de búsqueda
-    this.setState({ showSearchForm: true });
-  };
-
-
   peticionDelete = () => {
     axios.delete(`${url}/${this.state.form.estudianteId}`)
       .then(response => {
@@ -289,43 +303,97 @@ class App extends Component {
 
  
   render() {
-    const { form, errors, showSearchForm} = this.state;
+    const {searchText, searchResults, form, errors, showSearchButton, showTable, modalOpen, showSearchForm} = this.state;
+    
+  
     return (
       <div className="App">
        
         <h1 style={{ textAlign: 'center' }}>Colegio Divino Niño</h1>
-      
-        <button style={{ float: 'right' }} 
-        className="btn btn-success" onClick={() => { this.setState({ form: null, tipoModal: 'insertar' }); 
-        this.modalInsertar() }}>Agregar Estudiante
-        </button>
-        
+
+           {/* Botones de navegación */}
+      <div style={{ marginBottom: '20px' }}>
+        {/* Botón para la vista de agregar */}
         <button
-          style={{ float: 'right', marginRight: '10px' }}
-          className="btn btn-primary "
-          onClick={this.handleSearch}
+          className="btn btn-success"
+          onClick={() => this.setState({ modalOpen: true })}
+          style={{ marginRight: '10px' }}
+        >
+          Registro
+        </button>
+
+        {/* Botón para la vista de profesores */}
+        <button
+          className="btn btn-info"
+          onClick={() => this.setState({ showStudentView: false })}
+          style={{ marginRight: '10px' }}
+        >
+          Profesores
+        </button>
+
+        {/* Botón para la vista de estudiantes */}
+        <button
+          className="btn btn-primary"
+          onClick={() => this.setState({ showStudentView: true })}
+        >
+          Estudiantes
+        </button>
+      </div>
+
+      {/* Ventana modal para agregar */}
+      <Modal isOpen={modalOpen} toggle={() => this.setState({ modalOpen: false })}>
+        <ModalHeader toggle={() => this.setState({ modalOpen: false })}>
+          ¿A quién desea agregar?
+        </ModalHeader>
+        <ModalBody>
+          <button
+            className="btn btn-primary"
+            onClick={() => this.handleToggleTable({ typeToAdd: 'estudiante', modalOpen: false })}
+            style={{ marginRight: '10px' }}
+          >
+            Estudiantes
+          </button>
+          <button
+            className="btn btn-info"
+            onClick={() => this.setState({ typeToAdd: 'profesor', modalOpen: false })}
+          >
+            Profesores
+          </button>
+        </ModalBody>
+      </Modal>
+
+
+        {/* Campo de búsqueda */}
+      {showSearchForm && (
+        <div className="form-group">
+          <label htmlFor="search">Buscar por Estudiante ID o Apellidos:</label>
+          <input
+            className="form-control"
+            type="text"
+            id="search"
+            value={searchText}
+            onChange={this.handleSearchTextChange}
+          />
+        </div>
+      )}
+
+      {/* Botón de búsqueda */}
+      {showSearchButton && (
+        <button
+          className="btn btn-primary"
+          onClick={() => this.setState({ showSearchForm: true })}
         >
           Buscar Estudiante
         </button>
-
-        {/* Mostrar el formulario de búsqueda si showSearchForm es true */}
-        {showSearchForm && (
-          <div style={{ marginBottom: '20px', marginTop: '30px' }}>
-            <label>Buscar Estudiante:</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Ingrese el nombre o carnet del estudiante"
-            />
-          </div>
-        )}
+      )}
         
-        <img className="imagen-contenedor"
+       {/*  <img className="imagen-contenedor"
         src={require("./imagenes/f74477cd-0ef0-4da3-8e49-a7beef08cce7.jpg")}
         alt="imagen de la institucion" 
-        /> 
+        />  */}
   
-        <table className="table ">
+  {showTable && (
+        <table className="table">
           <thead>
             <tr>
               <th>Estudiante ID</th>
@@ -333,11 +401,11 @@ class App extends Component {
               <th>Apellido</th>
               <th>Celular</th>
               <th>Correo</th>
-              <th>Telefono</th>
-              <th>Genero</th>
+              <th>Teléfono</th>
+              <th>Género</th>
               <th>Fecha Nacimiento</th>
               <th>Fecha Ingreso</th>
-              <th>Direccion</th>
+              <th>Dirección</th>
               <th>Nombre del Padre</th>
               <th>Nombre de la Madre</th>
               <th>Encargado</th>
@@ -345,9 +413,10 @@ class App extends Component {
             </tr>
           </thead>
           <tbody>
-            {this.state.data.map(estudiante => {
-              return (
+              {/* Renderizar filas con resultados de búsqueda */}
+              {searchResults.map(estudiante => (
                 <tr key={estudiante.estudianteId}>
+                  {/* Celdas con datos del estudiante */}
                   <td>{estudiante.estudianteId}</td>
                   <td>{estudiante.nombres}</td>
                   <td>{estudiante.apellidos}</td>
@@ -361,16 +430,39 @@ class App extends Component {
                   <td>{estudiante.nombrePadre}</td>
                   <td>{estudiante.nombreMadre}</td>
                   <td>{estudiante.encargado}</td>
-                  <td>
-                    <button className="btn btn-primary" onClick={() => { this.seleccionarEstudiante(estudiante); this.modalInsertar() }}><FontAwesomeIcon icon={faEdit} /></button>
-                    {"   "}
-                    <button className="btn btn-danger" onClick={() => { this.seleccionarEstudiante(estudiante); this.setState({ modalEliminar: true }) }}><FontAwesomeIcon icon={faTrashAlt} /></button>
-                  </td>
                 </tr>
-              )
-            })}
+              ))}
+            {/* Renderizar la lista de estudiantes aquí */}
+            {this.state.data.map(estudiante => (
+              <tr key={estudiante.estudianteId}>
+                <td>{estudiante.estudianteId}</td>
+                <td>{estudiante.nombres}</td>
+                <td>{estudiante.apellidos}</td>
+                <td>{estudiante.celular}</td>
+                <td>{estudiante.correo}</td>
+                <td>{estudiante.telefono}</td>
+                <td>{estudiante.genero}</td>
+                <td>{estudiante.fechaNacimiento}</td>
+                <td>{estudiante.fechaIngreso}</td>
+                <td>{estudiante.direccion}</td>
+                <td>{estudiante.nombrePadre}</td>
+                <td>{estudiante.nombreMadre}</td>
+                <td>{estudiante.encargado}</td>
+                <td>
+                  <button className="btn btn-primary" onClick={() => { this.seleccionarEstudiante(estudiante); this.modalInsertar() }}>
+                    <FontAwesomeIcon icon={faEdit} />
+                  </button>
+                  {"   "}
+                  <button className="btn btn-danger" onClick={() => { this.seleccionarEstudiante(estudiante); this.setState({ modalEliminar: true }) }}>
+                    <FontAwesomeIcon icon={faTrashAlt} />
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
+          
         </table>
+      )}
 
 
         <Modal isOpen={this.state.modalInsertar}>
