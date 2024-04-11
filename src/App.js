@@ -50,9 +50,7 @@ class App extends Component {
     modalOpen: false, // Estado para controlar si se está realizando la acción de agregar
     typeToAdd: null,
     showStudentView: false,
-    showAddOptions: false,
-    searchText: '', // Texto de búsqueda
-    searchResults: [] // Resultados de búsqueda
+    showAddOptions: false
   }
 
   componentDidMount() {
@@ -137,17 +135,8 @@ class App extends Component {
       });
   };
 
-  //filtrar busqueda
-  handleSearchTextChange = (e) => {
-    const searchText = e.target.value.toUpperCase(); // Obtener texto de búsqueda en minúsculas
-    const filteredResults = this.state.data.filter(item =>
-      item.estudianteId.toString().includes(searchText) || item.apellidos.toLowerCase().includes(searchText)
-    );
-    this.setState({ searchText, searchResults: filteredResults });
-  };
-
   handleToggleTable = () => {
-    this.setState({ showTable: true, showAddButton: true, showSearchButton: true, showSearchForm:true});
+    this.setState({ showTable: true, showAddButton: true, showSearchButton: true });
   };
     
     handleChange = (e) => {
@@ -249,6 +238,13 @@ class App extends Component {
   }
 };
     
+
+  handleSearch = () => {
+    // Cambiar el estado para mostrar el formulario de búsqueda
+    this.setState({ showSearchForm: true });
+  };
+
+
   peticionDelete = () => {
     axios.delete(`${url}/${this.state.form.estudianteId}`)
       .then(response => {
@@ -303,9 +299,7 @@ class App extends Component {
 
  
   render() {
-    const {searchText, searchResults, form, errors, showSearchButton, showTable, modalOpen, showSearchForm} = this.state;
-    
-  
+    const { form, errors, showSearchButton, showTable, showAddButton,  modalOpen} = this.state;
     return (
       <div className="App">
        
@@ -361,36 +355,38 @@ class App extends Component {
           </button>
         </ModalBody>
       </Modal>
-
-
-        {/* Campo de búsqueda */}
-      {showSearchForm && (
-        <div className="form-group">
-          <label htmlFor="search">Buscar por Estudiante ID o Apellidos:</label>
-          <input
-            className="form-control"
-            type="text"
-            id="search"
-            value={searchText}
-            onChange={this.handleSearchTextChange}
-          />
-        </div>
+      
+        {/* Botones de navegación */}
+      {showAddButton && (
+        <button
+          className="btn btn-success"
+          onClick={() => { this.setState({ form: null, tipoModal: 'insertar' }); this.modalInsertar() }}
+          style={{ marginRight: '10px' }}
+        >
+          Agregar Estudiante
+        </button>
       )}
-
-      {/* Botón de búsqueda */}
+      
       {showSearchButton && (
+        <div>
         <button
           className="btn btn-primary"
           onClick={() => this.setState({ showSearchForm: true })}
         >
           Buscar Estudiante
         </button>
+        <input
+              type="text"
+              className="form-control"
+              placeholder="Ingrese el nombre o carnet del estudiante"
+            />
+          </div>
       )}
         
-       {/*  <img className="imagen-contenedor"
+        <img className="imagen-contenedor"
         src={require("./imagenes/f74477cd-0ef0-4da3-8e49-a7beef08cce7.jpg")}
         alt="imagen de la institucion" 
-        />  */}
+        /> 
   
   {showTable && (
         <table className="table">
@@ -413,25 +409,6 @@ class App extends Component {
             </tr>
           </thead>
           <tbody>
-              {/* Renderizar filas con resultados de búsqueda */}
-              {searchResults.map(estudiante => (
-                <tr key={estudiante.estudianteId}>
-                  {/* Celdas con datos del estudiante */}
-                  <td>{estudiante.estudianteId}</td>
-                  <td>{estudiante.nombres}</td>
-                  <td>{estudiante.apellidos}</td>
-                  <td>{estudiante.celular}</td>
-                  <td>{estudiante.correo}</td>
-                  <td>{estudiante.telefono}</td>
-                  <td>{estudiante.genero}</td>
-                  <td>{estudiante.fechaNacimiento}</td>
-                  <td>{estudiante.fechaIngreso}</td>
-                  <td>{estudiante.direccion}</td>
-                  <td>{estudiante.nombrePadre}</td>
-                  <td>{estudiante.nombreMadre}</td>
-                  <td>{estudiante.encargado}</td>
-                </tr>
-              ))}
             {/* Renderizar la lista de estudiantes aquí */}
             {this.state.data.map(estudiante => (
               <tr key={estudiante.estudianteId}>
@@ -460,7 +437,6 @@ class App extends Component {
               </tr>
             ))}
           </tbody>
-          
         </table>
       )}
 
