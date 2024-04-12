@@ -102,8 +102,8 @@ class App extends Component {
         console.log(error.message);
       });
   };
-  
-  peticionPut = () => {
+   
+   peticionPut = () => {
     const { form} = this.state;
   
     // Verificar si algún campo está vacío
@@ -143,86 +143,61 @@ class App extends Component {
     const { name, value } = e.target;
     const { form, errors } = this.state;
 
-   // const upperCase= value.toUpperCase();
-   
-     // Realizar validaciones según el nombre del campo
-  switch (name) {
-    case 'nombres':
-    case 'apellidos':
-    case 'nombrePadre':
-    case 'nombreMadre':
-    case 'encargado':
-      // Validar que solo contenga letras y espacios
-      const onlyLettersRegex = /^[A-Za-z\s]+$/;
-      if (!onlyLettersRegex.test(value)) {
-        this.setState({
-          errors: {
-            ...errors,
-            [`${name}Error`]: `El campo ${name} solo debe contener letras y espacios.`,
-          },
-        });
-      } else {
-        this.setState({
-          form: {
-            ...form,
-            [name]: value.toUpperCase(), // Convertir a mayúsculas
-          },
-          errors: {
-            ...errors,
-            [`${name}Error`]: '', // Limpiar mensaje de error
-          },
-        });
-      }
-      break;
+      switch (name) {
+        case 'nombres':
+        case 'apellidos':
+        case 'nombrePadre':
+        case 'nombreMadre':
+        case 'encargado':
+        case 'direccion':
+          // Validar que contenga solo letras y espacios o esté vacío
+          const onlyLettersRegex = /^[A-Za-z\s]*$/; // Usamos * en lugar de +
+          const isValid = onlyLettersRegex.test(value);
     
-    case 'celular':
-    case 'telefono':
-      // Validar que contenga exactamente 8 dígitos numéricos
-      const digitsRegex = /^[0-9-]+$/;
-      if (!digitsRegex.test(value)) {
-        this.setState({
-          errors: {
-            ...errors,
-            [`${name}Error`]: `El ${name === 'celular' ? 'celular' : 'teléfono'} debe contener exactamente 8 dígitos numéricos.`,
-          },
-        });
-      } else {
-        this.setState({
-          form: {
-            ...form,
-            [name]: value,
-          },
-          errors: {
-            ...errors,
-            [`${name}Error`]: '', // Limpiar mensaje de error
-          },
-        });
-      }
-      break;
+          this.setState(prevState => ({
+            form: {
+              ...prevState.form,
+              [name]: isValid ? value.toUpperCase() : value, // Convertir a mayúsculas si es válido
+            },
+            errors: {
+              ...prevState.errors,
+              [`${name}Error`]: isValid ? '' : `El campo ${name} solo debe contener letras y espacios.`,
+            },
+          }));
+          break;
 
-    case 'correo':
-      // Validar formato de correo electrónico
-      const emailRegex = /\S+@\S+\.\S+/;
-      if (!emailRegex.test(value)) {
-        this.setState({
-          errors: {
-            ...errors,
-            correoError: 'El correo electrónico debe tener un formato válido.',
-          },
-        });
-      } else {
-        this.setState({
-          form: {
-            ...form,
-            [name]: value,
-          },
-          errors: {
-            ...errors,
-            correoError: '', // Limpiar mensaje de error
-          },
-        });
-      }
-      break;
+      //la validacion no se activa instantaneamente
+      case 'correo':
+        // Verificar si el campo está vacío
+        if (value.trim() === '') {
+          // Campo vacío, limpiar el error de correo electrónico
+          this.setState({
+            form: {
+              ...form,
+              [name]: value,
+            },
+            errors: {
+              ...errors,
+              correoError: '', // Limpiar mensaje de error si el campo está vacío
+            },
+          });
+        } else {
+          // Campo no está vacío, validar el formato de correo electrónico
+          const emailRegex = /\S+@\S+\.\S+/;
+          const isValidEmail = emailRegex.test(value);
+  
+          this.setState({
+            form: {
+              ...form,
+              [name]: value,
+            },
+            errors: {
+              ...errors,
+              correoError: isValidEmail ? '' : 'El correo electrónico debe tener un formato válido.',
+            },
+          });
+        }
+        break;
 
     // Agregar más casos según los campos que necesiten validación específica
 
@@ -254,7 +229,8 @@ class App extends Component {
   }
 
   modalInsertar = () => {
-    this.setState({ modalInsertar: !this.state.modalInsertar });
+    const { form } = this.state;
+    this.setState({ modalInsertar: !this.state.modalInsertar, form: form ? form : { /* inicializar un formulario vacío si form es null */ } });
   }
 
   seleccionarEstudiante = (estudiante) => {
@@ -297,16 +273,52 @@ class App extends Component {
     }));
   };
 
+  
+
+  handleSearchById = async () => {
+
+    const { estudianteId } = this.state.form;
+    try {
+      const response = await axios.get(`${url}/${estudianteId}`);
+      if (response.data) {
+        // Si se encontró el estudiante, actualiza el estado para mostrar la tabla con el estudiante encontrado
+        this.setState({ data: [response.data], showTable: true });
+      } else {
+        // Si no se encontró el estudiante, muestra un mensaje de alerta
+        window.alert(`No se encontró ningún estudiante con el ID: ${estudianteId}`);
+      }
+    } catch (error) {
+
+      console.log(error.message);
+    }
+  };
+
+  hasValidationErrors = () => {
+    const { errors } = this.state;
+    // Verificar si algún campo de errores contiene un mensaje de error
+    for (const key in errors) {
+      if (errors[key]) {
+        return true; // Hay al menos un error de validación
+      }
+    }
+    return false; // No hay errores de validación
+  };
  
   render() {
     const { form, errors, showSearchButton, showTable, showAddButton,  modalOpen} = this.state;
     return (
       <div className="App">
        
-        <h1 style={{ textAlign: 'center' }}>Colegio Divino Niño</h1>
+       <h1 style={{ textAlign: 'center' }}>Colegio Divino Niño</h1>
 
+       <img className="imagen-contenedor"
+        src={require("./imagenes/f74477cd-0ef0-4da3-8e49-a7beef08cce7.jpg")}
+        alt="imagen de la institucion" 
+        /> 
+    
+      
            {/* Botones de navegación */}
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginTop: '-150px', marginBottom:'20px' }}>
         {/* Botón para la vista de agregar */}
         <button
           className="btn btn-success"
@@ -317,6 +329,7 @@ class App extends Component {
         </button>
 
         {/* Botón para la vista de profesores */}
+
         <button
           className="btn btn-info"
           onClick={() => this.setState({ showStudentView: false })}
@@ -334,27 +347,40 @@ class App extends Component {
         </button>
       </div>
 
-      {/* Ventana modal para agregar */}
-      <Modal isOpen={modalOpen} toggle={() => this.setState({ modalOpen: false })}>
-        <ModalHeader toggle={() => this.setState({ modalOpen: false })}>
-          ¿A quién desea agregar?
-        </ModalHeader>
-        <ModalBody>
-          <button
-            className="btn btn-primary"
-            onClick={() => this.handleToggleTable({ typeToAdd: 'estudiante', modalOpen: false })}
-            style={{ marginRight: '10px' }}
-          >
-            Estudiantes
-          </button>
-          <button
-            className="btn btn-info"
-            onClick={() => this.setState({ typeToAdd: 'profesor', modalOpen: false })}
-          >
-            Profesores
-          </button>
-        </ModalBody>
-      </Modal>
+      {/*este al momento de seleccionar algun boton se cierra por si solo */}
+      <Modal
+          isOpen={modalOpen}
+          toggle={() => this.setState({ modalOpen: false })}
+        >
+          {/* Encabezado del Modal */}
+          <ModalHeader toggle={() => this.setState({ modalOpen: false })}>
+            ¿Que desea agregar?
+          </ModalHeader>
+          {/* Cuerpo del Modal */}
+          <ModalBody>
+            {/* Botón para agregar Estudiantes */}
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                this.handleToggleTable({ typeToAdd: "estudiante" });
+                this.setState({ modalOpen: false });
+              }}
+              style={{ marginRight: "10px" }}
+            >
+              Estudiantes
+            </button>
+            {/* Botón para agregar Profesores */}
+            <button
+              className="btn btn-info"
+              onClick={() => {
+                this.handleToggleTable({ typeToAdd: "profesor" });
+                this.setState({ modalOpen: false });
+              }}
+            >
+              Profesores
+            </button>
+          </ModalBody>
+        </Modal>
       
         {/* Botones de navegación */}
       {showAddButton && (
@@ -369,24 +395,24 @@ class App extends Component {
       
       {showSearchButton && (
         <div>
-        <button
-          className="btn btn-primary"
-          onClick={() => this.setState({ showSearchForm: true })}
-        >
-          Buscar Estudiante
-        </button>
-        <input
-              type="text"
-              className="form-control"
-              placeholder="Ingrese el nombre o carnet del estudiante"
-            />
-          </div>
+          
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Ingrese el carne del estudiante"
+            style={{ marginTop: '40px', width: '250px'}}
+            onChange={(e) => this.setState({ form: { ...form, estudianteId: e.target.value } })}
+            value={form.estudianteId}
+          />
+          <button
+            className="btn btn-success"
+            onClick={() => this.handleSearchById()}
+            style={{ marginTop: '10px', marginBottom:'10px' }}
+          >
+            Buscar
+          </button>
+        </div>
       )}
-        
-        <img className="imagen-contenedor"
-        src={require("./imagenes/f74477cd-0ef0-4da3-8e49-a7beef08cce7.jpg")}
-        alt="imagen de la institucion" 
-        /> 
   
   {showTable && (
         <table className="table">
@@ -440,6 +466,8 @@ class App extends Component {
         </table>
       )}
 
+      
+
 
         <Modal isOpen={this.state.modalInsertar}>
           <ModalHeader style={{ display: 'block' }}>
@@ -463,7 +491,6 @@ class App extends Component {
                 type="text"
                 name="nombres"
                 id="nombres"
-                textTransform="uppercase"
                 placeholder="Ej: Carlos Ivan"
                 onChange={this.handleChange}
                 value={form ? form.nombres : ''}
@@ -473,10 +500,8 @@ class App extends Component {
                )}
               </div>
               
-              
               <div className="form-group col-md-6">
               <label htmlFor="apellidos">Apellido</label>
-              
               <input
                 className="form-control"
                 type="text"
@@ -493,7 +518,6 @@ class App extends Component {
               
               <div className="form-group col-md-6">
               <label htmlFor="celular" >Celular</label>
-              
               <InputMask 
                 mask= "9999-9999"
                 required = "true"
@@ -531,6 +555,7 @@ class App extends Component {
               <InputMask
                 mask="9999-9999"
                 className="form-control"
+                required="true"
                 type="tel"
                 name="telefono"
                 id="telefono"
@@ -553,8 +578,8 @@ class App extends Component {
                 value={form ? form.genero : ''}
               >
                 <option value="">Seleccionar género</option>
-                <option value="Masculino">Masculino</option>
-                <option value="Femenino">Femenino</option>
+                <option value="Masculino">MASCULINO</option>
+                <option value="Femenino">FEMENINO</option>
               </select>
               </div>
               
@@ -646,19 +671,33 @@ class App extends Component {
             
           </ModalBody>
           <ModalFooter>
-            {this.state.tipoModal === 'insertar' ? (
-              <button className="btn btn-success" onClick={() => this.peticionPost()}>
-                Verificar
-              </button>
-            ) : (
-              <button className="btn btn-primary" onClick={() => this.peticionPut()}>
+          {this.state.tipoModal === 'insertar' ? (
+  <button
+    className="btn btn-success"
+    onClick={() => {
+      // Verificar si hay errores antes de realizar la petición POST
+      if (this.hasValidationErrors()) {
+        // Mostrar alerta si hay errores de validación
+        alert('Por favor completa correctamente todos los campos.');
+      } else {
+        // Ejecutar la función peticionPost si no hay errores de validación
+        this.peticionPost();
+      }
+    }}
+  >
+    Verificar
+  </button>
+) : null}
+            {/*se utilizara para la siguiente historia, actualizar estudianteF */}
+             {/*  <button className="btn btn-primary" onClick={() => this.peticionPut()}>
                 Actualizar
-              </button>
-            )}
+              </button> */}
+            
             <button className="btn btn-danger" onClick={() => this.modalInsertar()}>
               Cancelar
             </button>
           </ModalFooter>
+          
         </Modal>
 
 

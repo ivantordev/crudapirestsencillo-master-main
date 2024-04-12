@@ -20,6 +20,10 @@ body {
   margin-left: 670px;
 }
 
+.emcabezado-tr{
+  background-color: rgb(214, 214, 214);
+  
+}
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
